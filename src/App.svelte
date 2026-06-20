@@ -5,5 +5,8 @@
   import Counter from './components/Counter.svelte'
 </script>
 
-<h1>text</h1>
-<Counter class="bg-red-500 p-2 rounded-lg text-amber-50"/>
+<main class="flex flex-col items-center h-screen p-2.5">
+    <h1>text</h1>
+    <Counter class="bg-red-500 p-2 rounded-lg text-amber-50" label="idk" />
+  
+</main>
