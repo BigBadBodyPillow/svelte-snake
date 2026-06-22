@@ -7,10 +7,23 @@
 
 
   let board: HTMLElement;
-  const dimensions = 8
-  let snakePostion = $state([0,0])
+  const dimensions: number = 8
+  let snakePostion: SnakePositionType = $state([0,0])
   let snakeXElement: HTMLParagraphElement;
   let snakeYElement: HTMLParagraphElement;
+  
+  const debounceDelay = 500; // ms
+  const lastMoveTime = new Map<string, number>();
+
+  const canMove = (direction: string): boolean => {
+    const now = Date.now();
+    const lastTime = lastMoveTime.get(direction) ?? 0;
+    if (now - lastTime >= debounceDelay) {
+      lastMoveTime.set(direction, now);
+      return true;
+    }
+    return false;
+  }
   
   const setBoardDimensions = (dimension:number) => {
     board.style.gridTemplateColumns = `repeat(${dimension}, minmax(0, 1fr))`
@@ -36,16 +49,21 @@
     const positionLegend = document.createElement("legend")
     positionLegend.textContent = "snake position"
     positionLegend.style.marginLeft = "10px"
-
+    
     snakeXElement = document.createElement("p")
     snakeXElement.textContent = `x : ${snakePostion[0]}`
-
+    
     snakeYElement = document.createElement("p")
     snakeYElement.textContent = `y : ${snakePostion[1]}`
-
+    
+    
+    const debounceDelayElement = document.createElement("p")
+    debounceDelayElement.textContent = `debounce : ${debounceDelay}`
+    
     document.body.appendChild(newDiv)
     newDiv.appendChild(positionFieldset)
     positionFieldset.appendChild(positionLegend)
+    positionFieldset.appendChild(debounceDelayElement)
     positionFieldset.appendChild(snakeXElement)
     positionFieldset.appendChild(snakeYElement)
   }
@@ -60,35 +78,41 @@
       snakeYElement.textContent = `y : ${snakePostion[1]}`
     }
   })
-
   
-  const moveRight = (position:SnakePositionType) => {
-    position[0]++ //increment x
-      
+  const moveRight = () => {
+    if (canMove("RIGHT")) {
+      snakePostion[0]++ //increment x
+    }
   }
-  const moveLeft = (position:SnakePositionType) => {
-    position[0]-- //decrement x
+  const moveLeft = () => {
+    if (canMove("LEFT")) {
+      snakePostion[0]-- //decrement x
+    }
   }
-  const moveUp = (position:SnakePositionType) => {
-    position[1]++ //increment y
+  const moveUp = () => {
+    if (canMove("UP")) {
+      snakePostion[1]++ //increment y
+    }
   }
-  const moveDown = (position:SnakePositionType) => {
-    position[1]-- //decrement y
+  const moveDown = () => {
+    if (canMove("DOWN")) {
+      snakePostion[1]-- //decrement y
+    }
   }
   
   const handleMove = (event:KeyboardEvent) => {
     switch (event.key.toUpperCase()) {
       case "W":
-        moveUp(snakePostion)
+        moveUp()
         break
       case "A":
-        moveLeft(snakePostion)
+        moveLeft()
         break
       case "S":
-        moveDown(snakePostion)
+        moveDown()
         break
       case "D":
-        moveRight(snakePostion)
+        moveRight()
         break
       default: break
     }

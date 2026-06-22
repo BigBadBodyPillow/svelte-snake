@@ -1,1 +1,1 @@
-export type SnakePositionType = Array<number>;
+export type SnakePositionType = [number, number];
