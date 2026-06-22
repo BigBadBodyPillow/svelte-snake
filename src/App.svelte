@@ -3,32 +3,115 @@
   // import viteLogo from './assets/vite.svg'
   // import heroImg from './assets/hero.png'
   import Counter from './components/Counter.svelte'
+  import type {SnakePositionType} from "./types"
 
 
   let board: HTMLElement;
-  let dimensions = 8
+  const dimensions = 8
+  let snakePostion = $state([0,0])
+  let snakeXElement: HTMLParagraphElement;
+  let snakeYElement: HTMLParagraphElement;
   
-  const setBoardDimensions = (dimension:Number) => {
+  const setBoardDimensions = (dimension:number) => {
     board.style.gridTemplateColumns = `repeat(${dimension}, minmax(0, 1fr))`
   }
+
+  const drawDebug = () => {
+    const newDiv = document.createElement("div")
+
+    newDiv.classList.add("debug-menu")
+    newDiv.style.position = "absolute"
+    newDiv.style.left = "0"
+    newDiv.style.top = "0"
+    newDiv.style.width = "200px"
+    newDiv.style.padding = "12px"
+    newDiv.style.fontFamily = "Space Grotesk"
+    newDiv.style.backgroundColor = "RGBA(0,0,0,0.8)"
+    newDiv.style.color = "white"
     
-  // when window is loaded
+    const positionFieldset = document.createElement("fieldset")
+    positionFieldset.style.border = ("2px solid gray")
+    positionFieldset.style.padding = "6px"
+
+    const positionLegend = document.createElement("legend")
+    positionLegend.textContent = "snake position"
+    positionLegend.style.marginLeft = "10px"
+
+    snakeXElement = document.createElement("p")
+    snakeXElement.textContent = `x : ${snakePostion[0]}`
+
+    snakeYElement = document.createElement("p")
+    snakeYElement.textContent = `y : ${snakePostion[1]}`
+
+    document.body.appendChild(newDiv)
+    newDiv.appendChild(positionFieldset)
+    positionFieldset.appendChild(positionLegend)
+    positionFieldset.appendChild(snakeXElement)
+    positionFieldset.appendChild(snakeYElement)
+  }
+
+  drawDebug()
+
+  
+  //update postions in menu debug
+  $effect(() => { 
+    if (snakeXElement && snakeYElement) {
+      snakeXElement.textContent = `x : ${snakePostion[0]}`
+      snakeYElement.textContent = `y : ${snakePostion[1]}`
+    }
+  })
+
+  
+  const moveRight = (position:SnakePositionType) => {
+    position[0]++ //increment x
+      
+  }
+  const moveLeft = (position:SnakePositionType) => {
+    position[0]-- //decrement x
+  }
+  const moveUp = (position:SnakePositionType) => {
+    position[1]++ //increment y
+  }
+  const moveDown = (position:SnakePositionType) => {
+    position[1]-- //decrement y
+  }
+  
+  const handleMove = (event:KeyboardEvent) => {
+    switch (event.key.toUpperCase()) {
+      case "W":
+        moveUp(snakePostion)
+        break
+      case "A":
+        moveLeft(snakePostion)
+        break
+      case "S":
+        moveDown(snakePostion)
+        break
+      case "D":
+        moveRight(snakePostion)
+        break
+      default: break
+    }
+  }
+
+   // when window is loa1ded
   $effect(() => {
     setBoardDimensions(dimensions)
   })
 
 </script>
 
+<svelte:window onkeypress={handleMove}/>
 <main class="flex flex-col items-center justify-center gap-8 h-screen p-2.5">
     <div class=" flex flex-col items-center gap-2">
       <h1>text</h1>
       <Counter class="bg-red-500 p-2 rounded-lg text-amber-50" label="idk" />
     </div>
 
-    <div class="board grid " bind:this={board}>
+    <div class="board grid " bind:this={board} draggable="false">
       <!-- x by x grid -->
       {#each {length: dimensions ** 2} as i }
-        <div class="w-7 h-7 bg-amber-400 border border-amber-950 hover:scale-90 hover:bg-amber-500 transition-all duration-50" ></div>
+        <div class="w-7 h-7 bg-amber-400 border border-amber-950 hover:scale-90 hover:bg-amber-500 transition-all duration-50 select-none" ></div>
       {/each}
     </div>
   
