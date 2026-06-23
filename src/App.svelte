@@ -29,6 +29,11 @@
     board.style.gridTemplateColumns = `repeat(${dimension}, minmax(0, 1fr))`
   }
 
+  // when window is loa1ded
+  $effect(() => {
+    setBoardDimensions(dimensions)
+  })
+
   const drawDebug = () => {
     const newDiv = document.createElement("div")
 
@@ -118,10 +123,21 @@
     }
   }
 
-   // when window is loa1ded
-  $effect(() => {
-    setBoardDimensions(dimensions)
-  })
+  // log each cell and its coordinates
+  // $effect(() => {
+  //   const cells = document.getElementsByClassName("cell")
+  //   Array.from(cells).forEach((cell, i) => {
+
+  //     if (cell instanceof HTMLElement) {
+        
+  //     const row = cell.dataset.row
+  //     const col = cell.dataset.col
+
+  //     console.log(`${i+1} - [${row},${col}]`)
+  //     }
+  //   });
+
+  // })
 
 </script>
 
@@ -132,11 +148,16 @@
       <Counter class="bg-red-500 p-2 rounded-lg text-amber-50" label="idk" />
     </div>
 
-    <div class="board grid " bind:this={board} draggable="false">
+    <div class="board grid relative" bind:this={board} draggable="false">
       <!-- x by x grid -->
-      {#each {length: dimensions ** 2} as i }
-        <div class="w-7 h-7 bg-amber-400 border border-amber-950 hover:scale-90 hover:bg-amber-500 transition-all duration-50 select-none" ></div>
+      {#each {length: dimensions ** 2} as _, i }
+        <div class="cell w-7 h-7 bg-amber-400 border border-amber-950 hover:scale-90 hover:bg-amber-500 transition-all duration-50 select-none" 
+        data-row={`${Math.floor(i / dimensions) + 1}`} // e.g cell 10(counting from 1) x is 9 / 8 + 1 not count remainder = 2
+        data-col={`${(i % dimensions) + 1}`} // e.g cell 10(counting from 1) y is 9 % 8 + 1 = 2 so 10:[x=2,y=2]
+        ></div>
       {/each}
+
+      <div class="snake bg-green-500 w-5 h-5 absolute mt-1 ml-1 left-49"></div>
     </div>
   
 </main>

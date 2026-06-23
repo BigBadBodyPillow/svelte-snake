@@ -1,47 +1,40 @@
-# Svelte + TS + Vite
+#
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+## notes
 
-## Recommended IDE Setup
+### ways to make board
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+#### width^2 divs
 
-## Need an official Svelte framework?
+column = mod width
+row = ? think later
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+#### 2d array
 
-## Technical considerations
+### move snake
 
-**Why use this over SvelteKit?**
+each cell is 7x7 in tailwind units (width: calc(var(--spacing) _ 7) /_ 1.75rem = 28px \*/;)
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+snake is 5x5 in tailwind units (height: calc(var(--spacing) _ 5) /_ 1.25rem = 20px \*/;)
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+if start in 0 0 to move to next cell, move left by 28 px (7 with tailwind)
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+so col 3 would be left-14 and col 8 would be left-49 ( 196px )
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+actualy now that think abouit. tailwind no work becuase probably move with js so just move by 20 px.
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+wory accesibility later.
 
-**Why include `.vscode/extensions.json`?**
+### generatl
 
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
+when snake get bigger body get bigger so join body
 
-**Why enable `allowJs` in the TS template?**
+#### idea
 
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
+head when alone 5x5
+body 7x5
+first body + 1 to fill gap of head
 
-**Why is HMR not preserving my local component state?**
+or
 
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
-```
+not make body individual, instead make body whole width untill end of body
