@@ -10,11 +10,16 @@
   const dimensions: number = 8
   const cellWidth = 28 /* px */
   const debounceDelay = 250 // ms
+  const defaultRow = 8
+  const defaultCol = 1
 
   let board: HTMLElement
   let snake: HTMLElement
   let snakeXElement: HTMLParagraphElement //for debug
   let snakeYElement: HTMLParagraphElement //for debug
+  let headRowElement: HTMLParagraphElement //for debug
+  let headColElement: HTMLParagraphElement //for debug
+  let cellElement: HTMLParagraphElement //for debug
 
   const lastMoveTime = new Map<string, number>()
 
@@ -35,55 +40,30 @@
   // when window is loa1ded
   $effect(() => {
     setBoardDimensions(dimensions)
+    setDefaultCell(defaultRow, defaultCol)
   })
 
-  const drawDebug = () => {
-    const newDiv = document.createElement('div')
+  const getCurrentCell = () => {
+    const col = Math.floor(snakePostion[0] / cellWidth) + 1
+    const rowFromBottom = Math.floor(snakePostion[1] / cellWidth) + 1
+    const row = dimensions - rowFromBottom + 1
+    const index = (row - 1) * dimensions + col
 
-    newDiv.classList.add('debug-menu')
-    newDiv.style.position = 'absolute'
-    newDiv.style.left = '0'
-    newDiv.style.top = '0'
-    newDiv.style.width = '200px'
-    newDiv.style.padding = '12px'
-    newDiv.style.fontFamily = 'Space Grotesk'
-    newDiv.style.backgroundColor = 'RGBA(0,0,0,0.8)'
-    newDiv.style.color = 'white'
-
-    const positionFieldset = document.createElement('fieldset')
-    positionFieldset.style.border = '2px solid gray'
-    positionFieldset.style.padding = '6px'
-
-    const positionLegend = document.createElement('legend')
-    positionLegend.textContent = 'snake position'
-    positionLegend.style.marginLeft = '10px'
-
-    snakeXElement = document.createElement('p')
-    snakeXElement.textContent = `x : ${snakePostion[0]}`
-
-    snakeYElement = document.createElement('p')
-    snakeYElement.textContent = `y : ${snakePostion[1]}`
-
-    const debounceDelayElement = document.createElement('p')
-    debounceDelayElement.textContent = `debounce : ${debounceDelay}`
-
-    document.body.appendChild(newDiv)
-    newDiv.appendChild(positionFieldset)
-    positionFieldset.appendChild(positionLegend)
-    positionFieldset.appendChild(debounceDelayElement)
-    positionFieldset.appendChild(snakeXElement)
-    positionFieldset.appendChild(snakeYElement)
+    return { row, col, index }
   }
 
-  drawDebug()
-
-  //update postions in menu debug
-  $effect(() => {
-    if (snakeXElement && snakeYElement) {
-      snakeXElement.textContent = `x : ${snakePostion[0]}`
-      snakeYElement.textContent = `y : ${snakePostion[1]}`
+  const setDefaultCell = (row: number, col: number) => {
+    if (row < 1 || row > dimensions || col < 1 || col > dimensions) {
+      return
     }
-  })
+
+    const x = (col - 1) * cellWidth
+    const y = (dimensions - row) * cellWidth
+
+    snakePostion = [x, y]
+    snake.style.left = `${x}px`
+    snake.style.bottom = `${y}px`
+  }
 
   const calculateMove = (stepX: number, stepY: number) => {
     const max = (dimensions - 1) * cellWidth // it starts in 1 so max is 224 - 28 or 7x28 = 196
@@ -137,6 +117,91 @@
         break
     }
   }
+
+  const drawDebug = () => {
+    const newDiv = document.createElement('div')
+
+    newDiv.classList.add('debug-menu')
+    newDiv.style.position = 'absolute'
+    newDiv.style.left = '0'
+    newDiv.style.top = '0'
+    newDiv.style.width = '200px'
+    newDiv.style.padding = '12px'
+    newDiv.style.fontFamily = 'Space Grotesk'
+    newDiv.style.backgroundColor = 'RGBA(0,0,0,0.8)'
+    newDiv.style.color = 'white'
+    newDiv.style.fontVariantNumeric = 'tabular-nums'
+
+    const positionFieldset = document.createElement('fieldset')
+    positionFieldset.style.border = '2px solid gray'
+    positionFieldset.style.padding = '6px'
+
+    const positionLegend = document.createElement('legend')
+    positionLegend.textContent = 'snake position'
+    positionLegend.style.marginLeft = '10px'
+
+    snakeXElement = document.createElement('p')
+    snakeXElement.textContent = `x : ${snakePostion[0]}`
+
+    snakeYElement = document.createElement('p')
+    snakeYElement.textContent = `y : ${snakePostion[1]}`
+
+    headRowElement = document.createElement('p')
+    headRowElement.textContent = `row : ${getCurrentCell().row}`
+
+    headColElement = document.createElement('p')
+    headColElement.textContent = `col : ${getCurrentCell().col}`
+
+    cellElement = document.createElement('p')
+    cellElement.textContent = `cell : ${getCurrentCell().index}`
+
+    const miscFieldset = document.createElement('fieldset')
+    miscFieldset.style.border = '2px solid gray'
+    miscFieldset.style.padding = '6px'
+
+    const miscLegend = document.createElement('legend')
+    miscLegend.textContent = 'misc'
+    miscLegend.style.marginLeft = '10px'
+
+    const gridSize = document.createElement('p')
+    gridSize.textContent = `grid size : ${dimensions} x ${dimensions}`
+
+    const cellSize = document.createElement('p')
+    cellSize.textContent = `grid size : ${cellWidth}px`
+
+    const debounceDelayElement = document.createElement('p')
+    debounceDelayElement.textContent = `debounce : ${debounceDelay}`
+
+    document.body.appendChild(newDiv)
+    newDiv.appendChild(positionFieldset)
+    positionFieldset.appendChild(positionLegend)
+    positionFieldset.appendChild(snakeXElement)
+    positionFieldset.appendChild(snakeYElement)
+    positionFieldset.appendChild(headRowElement)
+    positionFieldset.appendChild(headColElement)
+    positionFieldset.appendChild(cellElement)
+
+    newDiv.appendChild(miscFieldset)
+    miscFieldset.appendChild(debounceDelayElement)
+    miscFieldset.appendChild(miscLegend)
+    miscFieldset.appendChild(gridSize)
+    miscFieldset.appendChild(cellSize)
+  }
+
+  drawDebug()
+
+  const updateDebug = () => {
+    snakeXElement.textContent = `x : ${snakePostion[0]}`
+    snakeYElement.textContent = `y : ${snakePostion[1]}`
+    const { row, col, index } = getCurrentCell()
+    headRowElement.textContent = `row : ${row}`
+    headColElement.textContent = `col : ${col}`
+    cellElement.textContent = `cell : ${index}`
+  }
+
+  $effect(() => {
+    updateDebug()
+  })
 </script>
 
 <svelte:window onkeypress={handleMove} />
@@ -156,6 +221,6 @@
         ></div>
       {/each}
 
-      <div class="snake bg-green-500 w-5 h-5 absolute m-1 bottom-0" bind:this={snake}></div>
+      <div class="snake bg-green-500 w-5 h-5 absolute m-1 pointer-events-none" bind:this={snake}></div>
     </div>
 </main>
