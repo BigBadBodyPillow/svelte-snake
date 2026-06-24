@@ -38,3 +38,7 @@ first body + 1 to fill gap of head
 or
 
 not make body individual, instead make body whole width untill end of body
+
+#### mnotes
+
+i recentrly changed so 0 0 is bottom left since top left didnt make sence. not think about consequensces of that change yet. dont want to look inot yet, will see if anytiong breaks

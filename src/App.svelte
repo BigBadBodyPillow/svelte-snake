@@ -6,15 +6,21 @@
   import type {SnakePositionType} from "./types"
 
 
-  let board: HTMLElement;
-  const dimensions: number = 8
   let snakePostion: SnakePositionType = $state([0,0])
-  let snakeXElement: HTMLParagraphElement;
-  let snakeYElement: HTMLParagraphElement;
-  
-  const debounceDelay = 500; // ms
-  const lastMoveTime = new Map<string, number>();
 
+  const dimensions: number = 8
+  const cellWidth = 28 /* px */
+  const debounceDelay = 500; // ms
+
+  let board: HTMLElement;
+  let snake: HTMLElement
+  let snakeXElement: HTMLParagraphElement //for debug
+  let snakeYElement: HTMLParagraphElement//for debug
+  
+  const lastMoveTime = new Map<string, number>();
+  
+  
+  
   const canMove = (direction: string): boolean => {
     const now = Date.now();
     const lastTime = lastMoveTime.get(direction) ?? 0;
@@ -25,15 +31,17 @@
     return false;
   }
   
+
   const setBoardDimensions = (dimension:number) => {
     board.style.gridTemplateColumns = `repeat(${dimension}, minmax(0, 1fr))`
   }
-
+  
   // when window is loa1ded
   $effect(() => {
     setBoardDimensions(dimensions)
   })
-
+  
+  
   const drawDebug = () => {
     const newDiv = document.createElement("div")
 
@@ -83,26 +91,41 @@
       snakeYElement.textContent = `y : ${snakePostion[1]}`
     }
   })
+
+  const calculateMove = (stepX: number, stepY: number) => {
+    const max = (dimensions - 1) * cellWidth // it starts in 1 so max is 224 - 28 or 7x28 = 196
+
+    const moveX  = stepX * cellWidth
+    const moveY = stepY * cellWidth
+
+    // limit movement to be between row / col 0 - 8
+    const newX = Math.min(Math.max(snakePostion[0] + moveX, 0), max)
+    const newY = Math.min(Math.max(snakePostion[1] + moveY, 0), max)
+
+    return [newX, newY]
+  }
   
+  
+  const move = (stepX: number, stepY: number) => {
+    const [x, y] = calculateMove(stepX, stepY)
+
+    snakePostion = [x, y]
+    snake.style.left = `${x}px`
+    snake.style.bottom = `${y}px`
+  }
+
+
   const moveRight = () => {
-    if (canMove("RIGHT")) {
-      snakePostion[0]++ //increment x
-    }
+    if (canMove("RIGHT")) move(1, 0)
   }
   const moveLeft = () => {
-    if (canMove("LEFT")) {
-      snakePostion[0]-- //decrement x
-    }
+    if (canMove("LEFT")) move(-1, 0)
   }
   const moveUp = () => {
-    if (canMove("UP")) {
-      snakePostion[1]++ //increment y
-    }
+    if (canMove("UP")) move(0, 1)
   }
   const moveDown = () => {
-    if (canMove("DOWN")) {
-      snakePostion[1]-- //decrement y
-    }
+    if (canMove("DOWN")) move(0, -1)
   }
   
   const handleMove = (event:KeyboardEvent) => {
@@ -123,21 +146,6 @@
     }
   }
 
-  // log each cell and its coordinates
-  // $effect(() => {
-  //   const cells = document.getElementsByClassName("cell")
-  //   Array.from(cells).forEach((cell, i) => {
-
-  //     if (cell instanceof HTMLElement) {
-        
-  //     const row = cell.dataset.row
-  //     const col = cell.dataset.col
-
-  //     console.log(`${i+1} - [${row},${col}]`)
-  //     }
-  //   });
-
-  // })
 
 </script>
 
@@ -157,7 +165,16 @@
         ></div>
       {/each}
 
-      <div class="snake bg-green-500 w-5 h-5 absolute mt-1 ml-1 left-49"></div>
+      <div class="snake bg-green-500 w-5 h-5 absolute m-1 bottom-0" bind:this={snake}></div>
     </div>
   
 </main>
+
+
+
+
+<style>
+/* .snake {
+  left: 31px;
+} */
+</style>
