@@ -7,14 +7,17 @@
 
   let snakePostion: SnakePositionType = $state([0, 0])
 
-  const dimensions: number = 8
+  const dimensions: number = 9
   const cellWidth = 28 /* px */
   const debounceDelay = 250 // ms
-  const defaultRow = 8
-  const defaultCol = 1
+  const defaultRow = 5
+  const defaultCol = 5
+  let allCells: number[][] = []
 
   let board: HTMLElement
   let snake: HTMLElement
+  let apple: HTMLElement
+
   let snakeXElement: HTMLParagraphElement //for debug
   let snakeYElement: HTMLParagraphElement //for debug
   let headRowElement: HTMLParagraphElement //for debug
@@ -199,6 +202,22 @@
     cellElement.textContent = `cell : ${index}`
   }
 
+  const getArrayOfCells = () => {
+    const cells = document.getElementsByClassName('cell')
+
+    Array.from(cells).forEach((cell) => {
+      if (cell instanceof HTMLElement) {
+        const row = cell.dataset.row
+        const col = cell.dataset.col
+
+        allCells.push([Number(row), Number(col)])
+      }
+    })
+  }
+  $effect(() => {
+    getArrayOfCells()
+  })
+
   $effect(() => {
     updateDebug()
   })
@@ -222,5 +241,6 @@
       {/each}
 
       <div class="snake bg-green-500 w-5 h-5 absolute m-1 pointer-events-none" bind:this={snake}></div>
+      <div class="apple bg-red-500 rounded-full w-4 h-4 absolute m-1.5 pointer-events-none" bind:this={apple}></div>
     </div>
 </main>
