@@ -26,6 +26,10 @@
   let snakeYElement: DebugElement = null
   let headRowElement: DebugElement = null
   let headColElement: DebugElement = null
+  let appleXElement: DebugElement = null
+  let appleYElement: DebugElement = null
+  let appleRowElement: DebugElement = null
+  let appleColElement: DebugElement = null
   let cellElement: DebugElement = null
 
   const lastMoveTime: Map<Direction, number> = new Map()
@@ -159,6 +163,19 @@
     cellElement = document.createElement('p')
     // cellElement.textContent = `cell : ${getCurrentCell().index}`
 
+    const applePositionFieldset = document.createElement('fieldset')
+    applePositionFieldset.style.border = '2px solid gray'
+    applePositionFieldset.style.padding = '6px'
+
+    const applePositionLegend = document.createElement('legend')
+    applePositionLegend.textContent = 'apple position'
+    applePositionLegend.style.marginLeft = '10px'
+
+    appleXElement = document.createElement('p')
+    appleYElement = document.createElement('p')
+    appleRowElement = document.createElement('p')
+    appleColElement = document.createElement('p')
+
     const miscFieldset = document.createElement('fieldset')
     miscFieldset.style.border = '2px solid gray'
     miscFieldset.style.padding = '6px'
@@ -177,6 +194,7 @@
     debounceDelayElement.textContent = `debounce : ${debounceDelay}ms`
 
     document.body.appendChild(newDiv)
+
     newDiv.appendChild(positionFieldset)
     positionFieldset.appendChild(positionLegend)
     positionFieldset.appendChild(snakeXElement)
@@ -184,6 +202,18 @@
     positionFieldset.appendChild(headRowElement)
     positionFieldset.appendChild(headColElement)
     positionFieldset.appendChild(cellElement)
+
+    newDiv.appendChild(applePositionFieldset)
+    applePositionFieldset.appendChild(applePositionLegend)
+    applePositionFieldset.appendChild(appleXElement)
+    applePositionFieldset.appendChild(appleYElement)
+    applePositionFieldset.appendChild(appleRowElement)
+    applePositionFieldset.appendChild(appleColElement)
+
+    appleXElement.textContent = `x : x`
+    appleYElement.textContent = `y : y`
+    appleRowElement.textContent = `row : row`
+    appleColElement.textContent = `col : col`
 
     newDiv.appendChild(miscFieldset)
     miscFieldset.appendChild(debounceDelayElement)
@@ -193,9 +223,8 @@
   }
 
   const updateDebug = () => {
-    if (!snakeXElement || !snakeYElement || !headRowElement || !headColElement || !cellElement) {
+    if (!snakeXElement || !snakeYElement || !headRowElement || !headColElement || !cellElement)
       return
-    }
 
     snakeXElement.textContent = `x : ${snakePosition[0]}px`
     snakeYElement.textContent = `y : ${snakePosition[1]}px`
