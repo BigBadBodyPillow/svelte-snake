@@ -1,34 +1,39 @@
 <script lang="ts">
-  // import svelteLogo from './assets/svelte.svg'
-  // import viteLogo from './assets/vite.svg'
-  // import heroImg from './assets/hero.png'
-  import Counter from './components/Counter.svelte'
-  import type { SnakePositionType } from './types'
+  import { onMount } from 'svelte'
+  import type { SnakePositionType, Direction, Cell, DebugElement, GameElement } from './types'
 
-  let snakePostion: SnakePositionType = $state([0, 0])
+  let snakePosition: SnakePositionType = $state([0, 0])
 
-  const dimensions: number = 9
+  const dimensions = 9
   const cellWidth = 28 /* px */
   const debounceDelay = 250 // ms
   const defaultRow = 5
   const defaultCol = 5
-  let allCells: number[][] = []
 
-  let board: HTMLElement
-  let snake: HTMLElement
-  let apple: HTMLElement
+  const cells: Cell[] = Array.from({ length: dimensions ** 2 }, (_, index) => ({
+    id: index,
+    row: Math.floor(index / dimensions) + 1,
+    col: (index % dimensions) + 1
+  }))
 
-  let snakeXElement: HTMLParagraphElement //for debug
-  let snakeYElement: HTMLParagraphElement //for debug
-  let headRowElement: HTMLParagraphElement //for debug
-  let headColElement: HTMLParagraphElement //for debug
-  let cellElement: HTMLParagraphElement //for debug
+  // game elements
+  let board: GameElement = null
+  let snake: GameElement = null
+  let apple: GameElement = null
 
-  const lastMoveTime = new Map<string, number>()
+  //for debug
+  let snakeXElement: DebugElement = null
+  let snakeYElement: DebugElement = null
+  let headRowElement: DebugElement = null
+  let headColElement: DebugElement = null
+  let cellElement: DebugElement = null
 
-  const canMove = (direction: string): boolean => {
+  const lastMoveTime: Map<Direction, number> = new Map()
+
+  const canMove = (direction: Direction): boolean => {
     const now = Date.now()
     const lastTime = lastMoveTime.get(direction) ?? 0
+
     if (now - lastTime >= debounceDelay) {
       lastMoveTime.set(direction, now)
       return true
@@ -36,19 +41,14 @@
     return false
   }
 
-  const setBoardDimensions = (dimension: number) => {
-    board.style.gridTemplateColumns = `repeat(${dimension}, minmax(0, 1fr))`
+  const setBoardDimensions = () => {
+    if (!board) return
+    board.style.gridTemplateColumns = `repeat(${dimensions}, minmax(0, 1fr))`
   }
 
-  // when window is loa1ded
-  $effect(() => {
-    setBoardDimensions(dimensions)
-    setDefaultCell(defaultRow, defaultCol)
-  })
-
   const getCurrentCell = () => {
-    const col = Math.floor(snakePostion[0] / cellWidth) + 1
-    const rowFromBottom = Math.floor(snakePostion[1] / cellWidth) + 1
+    const col = Math.floor(snakePosition[0] / cellWidth) + 1
+    const rowFromBottom = Math.floor(snakePosition[1] / cellWidth) + 1
     const row = dimensions - rowFromBottom + 1
     const index = (row - 1) * dimensions + col
 
@@ -56,50 +56,55 @@
   }
 
   const setDefaultCell = (row: number, col: number) => {
-    if (row < 1 || row > dimensions || col < 1 || col > dimensions) {
-      return
-    }
+    if (row < 1 || row > dimensions || col < 1 || col > dimensions) return
 
     const x = (col - 1) * cellWidth
     const y = (dimensions - row) * cellWidth
+    snakePosition = [x, y]
 
-    snakePostion = [x, y]
-    snake.style.left = `${x}px`
-    snake.style.bottom = `${y}px`
+    if (snake) {
+      snake.style.left = `${x}px`
+      snake.style.bottom = `${y}px`
+    }
   }
 
-  const calculateMove = (stepX: number, stepY: number) => {
-    const max = (dimensions - 1) * cellWidth // it starts in 1 so max is 224 - 28 or 7x28 = 196
-
+  const calculateMove = (stepX: number, stepY: number): SnakePositionType => {
+    const max = (dimensions - 1) * cellWidth
     const moveX = stepX * cellWidth
     const moveY = stepY * cellWidth
 
-    // limit movement to be between row / col 0 - 8
-    const newX = Math.min(Math.max(snakePostion[0] + moveX, 0), max)
-    const newY = Math.min(Math.max(snakePostion[1] + moveY, 0), max)
+    // limit movement to be between row / col, 0 - 8
+    const newX = Math.min(Math.max(snakePosition[0] + moveX, 0), max)
+    const newY = Math.min(Math.max(snakePosition[1] + moveY, 0), max)
 
     return [newX, newY]
   }
 
   const move = (stepX: number, stepY: number) => {
     const [x, y] = calculateMove(stepX, stepY)
+    snakePosition = [x, y]
 
-    snakePostion = [x, y]
-    snake.style.left = `${x}px`
-    snake.style.bottom = `${y}px`
+    if (snake) {
+      snake.style.left = `${x}px`
+      snake.style.bottom = `${y}px`
+    }
   }
 
   const moveRight = () => {
-    if (canMove('RIGHT')) move(1, 0)
+    // if (canMove('RIGHT')) move(1, 0)
+    canMove('RIGHT') ? move(1, 0) : null
   }
   const moveLeft = () => {
-    if (canMove('LEFT')) move(-1, 0)
+    // if (canMove('LEFT')) move(-1, 0)
+    canMove('LEFT') ? move(-1, 0) : null
   }
   const moveUp = () => {
-    if (canMove('UP')) move(0, 1)
+    // if (canMove('UP')) move(0, 1)
+    canMove('UP') ? move(0, 1) : null
   }
   const moveDown = () => {
-    if (canMove('DOWN')) move(0, -1)
+    // if (canMove('DOWN')) move(0, -1)
+    canMove('DOWN') ? move(0, -1) : null
   }
 
   const handleMove = (event: KeyboardEvent) => {
@@ -144,19 +149,15 @@
     positionLegend.style.marginLeft = '10px'
 
     snakeXElement = document.createElement('p')
-    snakeXElement.textContent = `x : ${snakePostion[0]}`
-
+    // snakeXElement.textContent = `x : ${snakePosition[0]}`
     snakeYElement = document.createElement('p')
-    snakeYElement.textContent = `y : ${snakePostion[1]}`
-
+    // snakeYElement.textContent = `y : ${snakePosition[1]}`
     headRowElement = document.createElement('p')
-    headRowElement.textContent = `row : ${getCurrentCell().row}`
-
+    // headRowElement.textContent = `row : ${getCurrentCell().row}`
     headColElement = document.createElement('p')
-    headColElement.textContent = `col : ${getCurrentCell().col}`
-
+    // headColElement.textContent = `col : ${getCurrentCell().col}`
     cellElement = document.createElement('p')
-    cellElement.textContent = `cell : ${getCurrentCell().index}`
+    // cellElement.textContent = `cell : ${getCurrentCell().index}`
 
     const miscFieldset = document.createElement('fieldset')
     miscFieldset.style.border = '2px solid gray'
@@ -170,10 +171,10 @@
     gridSize.textContent = `grid size : ${dimensions} x ${dimensions}`
 
     const cellSize = document.createElement('p')
-    cellSize.textContent = `grid size : ${cellWidth}px`
+    cellSize.textContent = `cell size : ${cellWidth}px`
 
     const debounceDelayElement = document.createElement('p')
-    debounceDelayElement.textContent = `debounce : ${debounceDelay}`
+    debounceDelayElement.textContent = `debounce : ${debounceDelay}ms`
 
     document.body.appendChild(newDiv)
     newDiv.appendChild(positionFieldset)
@@ -191,31 +192,24 @@
     miscFieldset.appendChild(cellSize)
   }
 
-  drawDebug()
-
   const updateDebug = () => {
-    snakeXElement.textContent = `x : ${snakePostion[0]}`
-    snakeYElement.textContent = `y : ${snakePostion[1]}`
+    if (!snakeXElement || !snakeYElement || !headRowElement || !headColElement || !cellElement) {
+      return
+    }
+
+    snakeXElement.textContent = `x : ${snakePosition[0]}px`
+    snakeYElement.textContent = `y : ${snakePosition[1]}px`
     const { row, col, index } = getCurrentCell()
     headRowElement.textContent = `row : ${row}`
     headColElement.textContent = `col : ${col}`
     cellElement.textContent = `cell : ${index}`
   }
 
-  const getArrayOfCells = () => {
-    const cells = document.getElementsByClassName('cell')
-
-    Array.from(cells).forEach((cell) => {
-      if (cell instanceof HTMLElement) {
-        const row = cell.dataset.row
-        const col = cell.dataset.col
-
-        allCells.push([Number(row), Number(col)])
-      }
-    })
-  }
-  $effect(() => {
-    getArrayOfCells()
+  onMount(() => {
+    setBoardDimensions()
+    setDefaultCell(defaultRow, defaultCol)
+    drawDebug()
+    updateDebug()
   })
 
   $effect(() => {
@@ -224,23 +218,19 @@
 </script>
 
 <svelte:window onkeypress={handleMove} />
+
+<!-- prettier-ignore -->
 <main class="flex flex-col items-center justify-center gap-8 h-screen p-2.5">
-  <div class=" flex flex-col items-center gap-2">
-    <h1>text</h1>
-    <Counter class="bg-red-500 p-2 rounded-lg text-amber-50" label="idk" />
-  </div>
-
-  <!-- prettier-ignore -->
   <div class="board grid relative" bind:this={board} draggable="false">
-      <!-- x by x grid -->
-      {#each {length: dimensions ** 2} as _, i }
-        <div class="cell w-7 h-7 bg-amber-400 border border-amber-950 hover:scale-90 hover:bg-amber-500 transition-all duration-50 select-none" 
-        data-row={`${Math.floor(i / dimensions) + 1}`} // e.g cell 10(counting from 1) x is 9 / 8 + 1 not count remainder = 2
-        data-col={`${(i % dimensions) + 1}`} // e.g cell 10(counting from 1) y is 9 % 8 + 1 = 2 so 10:[x=2,y=2]
-        ></div>
-      {/each}
+    {#each cells as cell}
+      <div
+        class="cell h-7 w-7 select-none border border-amber-950 bg-amber-400 transition-all duration-50 hover:scale-90 hover:bg-amber-500"
+        data-row={cell.row}
+        data-col={cell.col}
+      ></div>
+    {/each}
 
-      <div class="snake bg-green-500 w-5 h-5 absolute m-1 pointer-events-none" bind:this={snake}></div>
-      <div class="apple bg-red-500 rounded-full w-4 h-4 absolute m-1.5 pointer-events-none" bind:this={apple}></div>
-    </div>
+    <div class="snake absolute z-10 m-1 h-5 w-5 bg-green-500 pointer-events-none" bind:this={snake}></div>
+    <div class="apple absolute z-9 m-1.5 h-4 w-4 rounded-full bg-red-500 pointer-events-none" bind:this={apple}></div>
+  </div>
 </main>
