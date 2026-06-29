@@ -1,4 +1,4 @@
-export type SnakePositionType = [number, number]
+export type PositionType = [number, number]
 
 export interface Cell {
   id: number
@@ -7,6 +7,6 @@ export interface Cell {
 }
 
 export type GameElement = HTMLDivElement | null
-export type DebugElement = HTMLParagraphElement | null
+export type DebugElement = HTMLElement | null
 
 export type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'

@@ -1,15 +1,20 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import type { SnakePositionType, Direction, Cell, DebugElement, GameElement } from './types'
+  import type { PositionType, Direction, Cell, DebugElement, GameElement } from './types'
 
-  let snakePosition: SnakePositionType = $state([0, 0])
+  let snakePosition: PositionType = $state([0, 0])
+  let applePosition: PositionType = $state([0, 0])
+  let eaten = $state(0)
+  let appleVisible = true
+  let eatenStatus: boolean
 
   const dimensions = 9
   const cellWidth = 28 /* px */
   const debounceDelay = 250 // ms
   const defaultRow = 5
   const defaultCol = 5
-
+  const defaultAppleRow = 2
+  const defaultAppleCol = 2
   const cells: Cell[] = Array.from({ length: dimensions ** 2 }, (_, index) => ({
     id: index,
     row: Math.floor(index / dimensions) + 1,
@@ -26,11 +31,17 @@
   let snakeYElement: DebugElement = null
   let headRowElement: DebugElement = null
   let headColElement: DebugElement = null
+  let cellElement: DebugElement = null
+  let applesEaten: DebugElement = null
   let appleXElement: DebugElement = null
   let appleYElement: DebugElement = null
   let appleRowElement: DebugElement = null
   let appleColElement: DebugElement = null
-  let cellElement: DebugElement = null
+  let appleCell: DebugElement = null
+  let eatenStatusElement: DebugElement = null
+  let appleButtonContainer: DebugElement = null
+  let eatAppleButton: DebugElement = null
+  let spawnAppleButton: DebugElement = null
 
   const lastMoveTime: Map<Direction, number> = new Map()
 
@@ -50,14 +61,16 @@
     board.style.gridTemplateColumns = `repeat(${dimensions}, minmax(0, 1fr))`
   }
 
-  const getCurrentCell = () => {
-    const col = Math.floor(snakePosition[0] / cellWidth) + 1
-    const rowFromBottom = Math.floor(snakePosition[1] / cellWidth) + 1
+  const getCellFromPosition = (position: PositionType) => {
+    const col = Math.floor(position[0] / cellWidth) + 1
+    const rowFromBottom = Math.floor(position[1] / cellWidth) + 1
     const row = dimensions - rowFromBottom + 1
     const index = (row - 1) * dimensions + col
 
     return { row, col, index }
   }
+
+  const getCurrentCell = () => getCellFromPosition(snakePosition)
 
   const setDefaultCell = (row: number, col: number) => {
     if (row < 1 || row > dimensions || col < 1 || col > dimensions) return
@@ -72,7 +85,20 @@
     }
   }
 
-  const calculateMove = (stepX: number, stepY: number): SnakePositionType => {
+  const setApplePosition = (row: number, col: number) => {
+    if (row < 1 || row > dimensions || col < 1 || col > dimensions) return
+
+    const x = (col - 1) * cellWidth
+    const y = (dimensions - row) * cellWidth
+    applePosition = [x, y]
+
+    if (apple) {
+      apple.style.left = `${x}px`
+      apple.style.bottom = `${y}px`
+    }
+  }
+
+  const calculateMove = (stepX: number, stepY: number): PositionType => {
     const max = (dimensions - 1) * cellWidth
     const moveX = stepX * cellWidth
     const moveY = stepY * cellWidth
@@ -92,22 +118,20 @@
       snake.style.left = `${x}px`
       snake.style.bottom = `${y}px`
     }
+
+    checkEat()
   }
 
   const moveRight = () => {
-    // if (canMove('RIGHT')) move(1, 0)
     canMove('RIGHT') ? move(1, 0) : null
   }
   const moveLeft = () => {
-    // if (canMove('LEFT')) move(-1, 0)
     canMove('LEFT') ? move(-1, 0) : null
   }
   const moveUp = () => {
-    // if (canMove('UP')) move(0, 1)
     canMove('UP') ? move(0, 1) : null
   }
   const moveDown = () => {
-    // if (canMove('DOWN')) move(0, -1)
     canMove('DOWN') ? move(0, -1) : null
   }
 
@@ -127,6 +151,36 @@
         break
       default:
         break
+    }
+  }
+  const eatApple = () => {
+    if (!apple || !appleVisible) return
+    apple.style.display = 'none'
+    appleVisible = false
+    eaten++
+    eatenStatus = true
+    updateDebug()
+  }
+
+  const spawnApple = () => {
+    if (!apple) return
+    appleVisible = true
+    apple.style.display = 'block'
+    eatenStatus = false
+
+    const randomRow = Math.floor(Math.random() * dimensions) + 1
+    const randomCol = Math.floor(Math.random() * dimensions) + 1
+    setApplePosition(randomRow, randomCol)
+    updateDebug()
+    checkEat()
+  }
+
+  const checkEat = () => {
+    if (!appleVisible) return
+    const snakeIndex = getCellFromPosition(snakePosition).index
+    const appleIndex = getCellFromPosition(applePosition).index
+    if (snakeIndex === appleIndex) {
+      eatApple()
     }
   }
 
@@ -149,32 +203,47 @@
     positionFieldset.style.padding = '6px'
 
     const positionLegend = document.createElement('legend')
-    positionLegend.textContent = 'snake position'
+    positionLegend.textContent = 'snake '
     positionLegend.style.marginLeft = '10px'
 
     snakeXElement = document.createElement('p')
-    // snakeXElement.textContent = `x : ${snakePosition[0]}`
     snakeYElement = document.createElement('p')
-    // snakeYElement.textContent = `y : ${snakePosition[1]}`
     headRowElement = document.createElement('p')
-    // headRowElement.textContent = `row : ${getCurrentCell().row}`
     headColElement = document.createElement('p')
-    // headColElement.textContent = `col : ${getCurrentCell().col}`
     cellElement = document.createElement('p')
-    // cellElement.textContent = `cell : ${getCurrentCell().index}`
+    applesEaten = document.createElement('p')
 
     const applePositionFieldset = document.createElement('fieldset')
     applePositionFieldset.style.border = '2px solid gray'
     applePositionFieldset.style.padding = '6px'
 
     const applePositionLegend = document.createElement('legend')
-    applePositionLegend.textContent = 'apple position'
+    applePositionLegend.textContent = 'apple'
     applePositionLegend.style.marginLeft = '10px'
 
     appleXElement = document.createElement('p')
     appleYElement = document.createElement('p')
     appleRowElement = document.createElement('p')
     appleColElement = document.createElement('p')
+    appleCell = document.createElement('p')
+    eatenStatusElement = document.createElement('p')
+
+    appleButtonContainer = document.createElement('div')
+    appleButtonContainer.style.display = 'flex'
+    appleButtonContainer.style.justifyContent = 'space-between'
+    appleButtonContainer.style.gap = '10px'
+    eatAppleButton = document.createElement('button')
+    eatAppleButton.textContent = 'eat'
+    eatAppleButton.style.width = '100%'
+    eatAppleButton.style.padding = '2px 6px'
+    eatAppleButton.style.background = '#444444'
+    eatAppleButton.addEventListener('click', eatApple)
+    spawnAppleButton = document.createElement('button')
+    spawnAppleButton.textContent = 'respawn'
+    spawnAppleButton.style.width = '100%'
+    spawnAppleButton.style.padding = '2px 6px'
+    spawnAppleButton.style.background = '#444444'
+    spawnAppleButton.addEventListener('click', spawnApple)
 
     const miscFieldset = document.createElement('fieldset')
     miscFieldset.style.border = '2px solid gray'
@@ -202,6 +271,7 @@
     positionFieldset.appendChild(headRowElement)
     positionFieldset.appendChild(headColElement)
     positionFieldset.appendChild(cellElement)
+    positionFieldset.appendChild(applesEaten)
 
     newDiv.appendChild(applePositionFieldset)
     applePositionFieldset.appendChild(applePositionLegend)
@@ -209,11 +279,12 @@
     applePositionFieldset.appendChild(appleYElement)
     applePositionFieldset.appendChild(appleRowElement)
     applePositionFieldset.appendChild(appleColElement)
+    applePositionFieldset.appendChild(appleCell)
+    applePositionFieldset.appendChild(eatenStatusElement)
+    applePositionFieldset.appendChild(appleButtonContainer)
 
-    appleXElement.textContent = `x : x`
-    appleYElement.textContent = `y : y`
-    appleRowElement.textContent = `row : row`
-    appleColElement.textContent = `col : col`
+    appleButtonContainer.appendChild(eatAppleButton)
+    appleButtonContainer.appendChild(spawnAppleButton)
 
     newDiv.appendChild(miscFieldset)
     miscFieldset.appendChild(debounceDelayElement)
@@ -223,20 +294,43 @@
   }
 
   const updateDebug = () => {
-    if (!snakeXElement || !snakeYElement || !headRowElement || !headColElement || !cellElement)
+    if (
+      !snakeXElement ||
+      !snakeYElement ||
+      !headRowElement ||
+      !headColElement ||
+      !cellElement ||
+      !applesEaten ||
+      !appleXElement ||
+      !appleYElement ||
+      !appleRowElement ||
+      !appleColElement ||
+      !appleCell ||
+      !eatenStatusElement
+    )
       return
 
     snakeXElement.textContent = `x : ${snakePosition[0]}px`
     snakeYElement.textContent = `y : ${snakePosition[1]}px`
-    const { row, col, index } = getCurrentCell()
-    headRowElement.textContent = `row : ${row}`
-    headColElement.textContent = `col : ${col}`
-    cellElement.textContent = `cell : ${index}`
+    const snakeCell = getCurrentCell()
+    headRowElement.textContent = `row : ${snakeCell.row}`
+    headColElement.textContent = `col : ${snakeCell.col}`
+    cellElement.textContent = `cell : ${snakeCell.index}`
+    applesEaten.textContent = `eaten : ${eaten}`
+
+    appleXElement.textContent = `x : ${applePosition[0]}px`
+    appleYElement.textContent = `y : ${applePosition[1]}px`
+    const appleCellPos = getCellFromPosition(applePosition)
+    appleRowElement.textContent = `row : ${appleCellPos.row}`
+    appleColElement.textContent = `col : ${appleCellPos.col}`
+    appleCell.textContent = `cell : ${appleCellPos.index}`
+    eatenStatusElement.textContent = `isEaten: ${eatenStatus}`
   }
 
   onMount(() => {
     setBoardDimensions()
     setDefaultCell(defaultRow, defaultCol)
+    setApplePosition(defaultAppleRow, defaultAppleCol)
     drawDebug()
     updateDebug()
   })
