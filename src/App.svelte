@@ -45,7 +45,7 @@
 
   const lastMoveTime: Map<Direction, number> = new Map()
 
-  const canMove = (direction: Direction): boolean => {
+  function canMove(direction: Direction): boolean {
     const now = Date.now()
     const lastTime = lastMoveTime.get(direction) ?? 0
 
@@ -56,12 +56,12 @@
     return false
   }
 
-  const setBoardDimensions = () => {
+  function setBoardDimensions() {
     if (!board) return
     board.style.gridTemplateColumns = `repeat(${dimensions}, minmax(0, 1fr))`
   }
 
-  const getCellFromPosition = (position: PositionType) => {
+  function getCellFromPosition(position: PositionType) {
     const col = Math.floor(position[0] / cellWidth) + 1
     const rowFromBottom = Math.floor(position[1] / cellWidth) + 1
     const row = dimensions - rowFromBottom + 1
@@ -70,9 +70,7 @@
     return { row, col, index }
   }
 
-  const getCurrentCell = () => getCellFromPosition(snakePosition)
-
-  const setDefaultCell = (row: number, col: number) => {
+  function setDefaultCell(row: number, col: number) {
     if (row < 1 || row > dimensions || col < 1 || col > dimensions) return
 
     const x = (col - 1) * cellWidth
@@ -85,7 +83,7 @@
     }
   }
 
-  const setApplePosition = (row: number, col: number) => {
+  function setApplePosition(row: number, col: number) {
     if (row < 1 || row > dimensions || col < 1 || col > dimensions) return
 
     const x = (col - 1) * cellWidth
@@ -98,7 +96,7 @@
     }
   }
 
-  const calculateMove = (stepX: number, stepY: number): PositionType => {
+  function calculateMove(stepX: number, stepY: number): PositionType {
     const max = (dimensions - 1) * cellWidth
     const moveX = stepX * cellWidth
     const moveY = stepY * cellWidth
@@ -110,7 +108,7 @@
     return [newX, newY]
   }
 
-  const move = (stepX: number, stepY: number) => {
+  function move(stepX: number, stepY: number) {
     const [x, y] = calculateMove(stepX, stepY)
     snakePosition = [x, y]
 
@@ -122,20 +120,20 @@
     checkEat()
   }
 
-  const moveRight = () => {
+  function moveRight() {
     canMove('RIGHT') ? move(1, 0) : null
   }
-  const moveLeft = () => {
+  function moveLeft() {
     canMove('LEFT') ? move(-1, 0) : null
   }
-  const moveUp = () => {
+  function moveUp() {
     canMove('UP') ? move(0, 1) : null
   }
-  const moveDown = () => {
+  function moveDown() {
     canMove('DOWN') ? move(0, -1) : null
   }
 
-  const handleMove = (event: KeyboardEvent) => {
+  function handleMove(event: KeyboardEvent) {
     switch (event.key.toUpperCase()) {
       case 'W':
         moveUp()
@@ -153,7 +151,7 @@
         break
     }
   }
-  const eatApple = () => {
+  function eatApple() {
     if (!apple || !appleVisible) return
     apple.style.display = 'none'
     appleVisible = false
@@ -162,7 +160,7 @@
     updateDebug()
   }
 
-  const spawnApple = () => {
+  function spawnApple() {
     if (!apple) return
     appleVisible = true
     apple.style.display = 'block'
@@ -175,7 +173,7 @@
     checkEat()
   }
 
-  const checkEat = () => {
+  function checkEat() {
     if (!appleVisible) return
     const snakeIndex = getCellFromPosition(snakePosition).index
     const appleIndex = getCellFromPosition(applePosition).index
@@ -184,7 +182,7 @@
     }
   }
 
-  const drawDebug = () => {
+  function drawDebug() {
     const newDiv = document.createElement('div')
 
     newDiv.classList.add('debug-menu')
@@ -293,7 +291,7 @@
     miscFieldset.appendChild(cellSize)
   }
 
-  const updateDebug = () => {
+  function updateDebug() {
     if (
       !snakeXElement ||
       !snakeYElement ||
@@ -312,7 +310,7 @@
 
     snakeXElement.textContent = `x : ${snakePosition[0]}px`
     snakeYElement.textContent = `y : ${snakePosition[1]}px`
-    const snakeCell = getCurrentCell()
+    const snakeCell = getCellFromPosition(snakePosition)
     headRowElement.textContent = `row : ${snakeCell.row}`
     headColElement.textContent = `col : ${snakeCell.col}`
     cellElement.textContent = `cell : ${snakeCell.index}`
@@ -353,7 +351,10 @@
       ></div>
     {/each}
 
-    <div class="snake absolute z-10 m-1 h-5 w-5 bg-green-500 pointer-events-none" bind:this={snake}></div>
+    <div class="snake absolute z-10 m-1 h-5 w-5 bg-green-500 pointer-events-none" bind:this={snake}>
+      <div class="bridge absolute left-5 top-0.5 h-4 w-3  bg-green-600 pointer-events-none"></div>
+      <div class="tail absolute rounded-sm left-7  h-5 w-5  bg-green-400 pointer-events-none"></div>
+    </div>
     <div class="apple absolute z-9 m-1.5 h-4 w-4 rounded-full bg-red-500 pointer-events-none" bind:this={apple}></div>
   </div>
 </main>
