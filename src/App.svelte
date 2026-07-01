@@ -4,6 +4,7 @@
 
   let snakePosition: PositionType = $state([0, 0])
   let applePosition: PositionType = $state([0, 0])
+  let snakeSegments: PositionType[] = $state([])
   let eaten = $state(0)
   let appleVisible = true
   let eatenStatus: boolean
@@ -20,13 +21,13 @@
     row: Math.floor(index / dimensions) + 1,
     col: (index % dimensions) + 1
   }))
+  const lastMoveTime: Map<Direction, number> = new Map()
 
-  // game elements
+  //game elemnts
   let board: GameElement = null
-  let snake: GameElement = null
   let apple: GameElement = null
 
-  //for debug
+  //debug
   let snakeXElement: DebugElement = null
   let snakeYElement: DebugElement = null
   let headRowElement: DebugElement = null
@@ -43,9 +44,7 @@
   let eatAppleButton: DebugElement = null
   let spawnAppleButton: DebugElement = null
 
-  const lastMoveTime: Map<Direction, number> = new Map()
-
-  function canMove(direction: Direction): boolean {
+  function checkMoveTimeout(direction: Direction): boolean {
     const now = Date.now()
     const lastTime = lastMoveTime.get(direction) ?? 0
 
@@ -53,6 +52,7 @@
       lastMoveTime.set(direction, now)
       return true
     }
+
     return false
   }
 
@@ -70,17 +70,21 @@
     return { row, col, index }
   }
 
+  function getPositionFromCell(row: number, col: number): PositionType {
+    const x = (col - 1) * cellWidth
+    const y = (dimensions - row) * cellWidth
+
+    return [x, y]
+  }
+
   function setDefaultCell(row: number, col: number) {
     if (row < 1 || row > dimensions || col < 1 || col > dimensions) return
 
-    const x = (col - 1) * cellWidth
-    const y = (dimensions - row) * cellWidth
-    snakePosition = [x, y]
+    const [x, y] = getPositionFromCell(row, col)
+    const headPosition: PositionType = [x, y]
 
-    if (snake) {
-      snake.style.left = `${x}px`
-      snake.style.bottom = `${y}px`
-    }
+    snakeSegments = [headPosition]
+    snakePosition = headPosition
   }
 
   function setApplePosition(row: number, col: number) {
@@ -96,68 +100,85 @@
     }
   }
 
-  function calculateMove(stepX: number, stepY: number): PositionType {
+  function calculateMove(stepX: number, stepY: number, position: PositionType): PositionType {
     const max = (dimensions - 1) * cellWidth
     const moveX = stepX * cellWidth
     const moveY = stepY * cellWidth
 
-    // limit movement to be between row / col, 0 - 8
-    const newX = Math.min(Math.max(snakePosition[0] + moveX, 0), max)
-    const newY = Math.min(Math.max(snakePosition[1] + moveY, 0), max)
+    // limit movement to grid
+    const newX = Math.min(Math.max(position[0] + moveX, 0), max)
+    const newY = Math.min(Math.max(position[1] + moveY, 0), max)
 
     return [newX, newY]
   }
 
   function move(stepX: number, stepY: number) {
-    const [x, y] = calculateMove(stepX, stepY)
-    snakePosition = [x, y]
+    if (snakeSegments.length === 0) return
 
-    if (snake) {
-      snake.style.left = `${x}px`
-      snake.style.bottom = `${y}px`
+    const tailPosition = snakeSegments[snakeSegments.length - 1]
+    const headPosition = snakeSegments[0]
+    const newHeadPosition = calculateMove(stepX, stepY, headPosition)
+    const nextSegments: PositionType[] = [newHeadPosition]
+
+    for (let index = 0; index < snakeSegments.length - 1; index++) {
+      nextSegments.push(snakeSegments[index])
     }
 
-    checkEat()
+    snakeSegments = nextSegments
+    snakePosition = newHeadPosition
+    checkEat(tailPosition)
   }
 
   function moveRight() {
-    canMove('RIGHT') ? move(1, 0) : null
+    checkMoveTimeout('RIGHT') ? move(1, 0) : null
   }
   function moveLeft() {
-    canMove('LEFT') ? move(-1, 0) : null
+    checkMoveTimeout('LEFT') ? move(-1, 0) : null
   }
   function moveUp() {
-    canMove('UP') ? move(0, 1) : null
+    checkMoveTimeout('UP') ? move(0, 1) : null
   }
   function moveDown() {
-    canMove('DOWN') ? move(0, -1) : null
+    checkMoveTimeout('DOWN') ? move(0, -1) : null
   }
 
   function handleMove(event: KeyboardEvent) {
+    const headPosition = snakeSegments[0]
+    const headCol = headPosition[0] / cellWidth + 1
+    const headRow = headPosition[1] / cellWidth + 1
+
     switch (event.key.toUpperCase()) {
       case 'W':
-        moveUp()
+        if (headRow < 9) moveUp()
         break
       case 'A':
-        moveLeft()
+        if (headCol > 1) moveLeft()
         break
       case 'S':
-        moveDown()
+        if (headRow > 1) moveDown()
         break
       case 'D':
-        moveRight()
+        if (headCol < 9) moveRight()
         break
       default:
         break
     }
   }
+
   function eatApple() {
     if (!apple || !appleVisible) return
     apple.style.display = 'none'
     appleVisible = false
     eaten++
     eatenStatus = true
+    const tailPosition = snakeSegments[snakeSegments.length - 1]
+    growSnake(tailPosition)
     updateDebug()
+  }
+
+  function growSnake(tailPosition?: PositionType) {
+    if (!tailPosition) return
+    snakeSegments = [...snakeSegments, tailPosition]
   }
 
   function spawnApple() {
@@ -173,9 +194,9 @@
     checkEat()
   }
 
-  function checkEat() {
+  function checkEat(tailPosition?: PositionType) {
     if (!appleVisible) return
-    const snakeIndex = getCellFromPosition(snakePosition).index
+    const snakeIndex = getCellFromPosition(snakeSegments[0]).index
     const appleIndex = getCellFromPosition(applePosition).index
     if (snakeIndex === appleIndex) {
       eatApple()
@@ -308,9 +329,10 @@
     )
       return
 
-    snakeXElement.textContent = `x : ${snakePosition[0]}px`
-    snakeYElement.textContent = `y : ${snakePosition[1]}px`
-    const snakeCell = getCellFromPosition(snakePosition)
+    const headPosition = snakeSegments[0]
+    snakeXElement.textContent = `x : ${headPosition[0]}px`
+    snakeYElement.textContent = `y : ${headPosition[1]}px`
+    const snakeCell = getCellFromPosition(headPosition)
     headRowElement.textContent = `row : ${snakeCell.row}`
     headColElement.textContent = `col : ${snakeCell.col}`
     cellElement.textContent = `cell : ${snakeCell.index}`
@@ -351,10 +373,15 @@
       ></div>
     {/each}
 
-    <div class="snake absolute z-10 m-1 h-5 w-5 bg-green-500 pointer-events-none" bind:this={snake}>
-      <div class="bridge absolute left-5 top-0.5 h-4 w-3  bg-green-600 pointer-events-none"></div>
-      <div class="tail absolute rounded-sm left-7  h-5 w-5  bg-green-400 pointer-events-none"></div>
-    </div>
-    <div class="apple absolute z-9 m-1.5 h-4 w-4 rounded-full bg-red-500 pointer-events-none" bind:this={apple}></div>
+    {#each snakeSegments as segment, index}
+      <div
+        class={`absolute z-10 m-1 h-5 w-5 pointer-events-none ${index === 0 ? 'bg-green-500 z-100' : 'bg-green-400'}`}
+        style:left={`${segment[0]}px`}
+        style:bottom={`${segment[1]}px`}
+      ></div>
+    {/each}
+    <div
+      class="apple absolute z-9 m-1.5 h-4 w-4 rounded-full bg-red-500 pointer-events-none" bind:this={apple}
+    ></div>
   </div>
 </main>
